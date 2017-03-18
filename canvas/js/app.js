@@ -10,11 +10,16 @@ enemyImg.src = "./img/sprite/Illuminati.png"
 var textX = 50;
 var textY = 50;
 var playerBullets = []; // holds all active bullets
-var playerEnemys = [];
+var playerEnemies = [];
 
 var score = 0;
 var updateFrames = true;
 
+
+var cursorX;
+var cursorY;
+
+var playerpos;
 
 
 // main player object
@@ -34,55 +39,21 @@ var player = {
       y: this.y + this.height/2
     };
   },
-  shoot: function(xV, yV) {
+  shoot: function(xV, yV, cX, cY) {
     var bulletPosition = this.midpoint();
 
     playerBullets.push(Bullet({
       xVelocity: xV,
       yVelocity: yV,
       x: bulletPosition.x,
-      y: bulletPosition.y
+      y: bulletPosition.y,
+      cursorX: cX,
+      cursorY: cY
     }));
   },
   hasShot: false
 }
 
-
-// this function makes bullets
-// it needs to be passed:
-// xVelocity
-// yVelocity
-// x
-// y
-function Bullet(I) {
-  I.active = true;
-
-  I.width = 3;
-  I.height = 3;
-  I.color = "#000";
-
-  // returns true if the bullet is in canvas still
-  I.inBounds = function() {
-    return I.x >= -5 && I.x <= CANVAS_WIDTH &&
-      I.y >= -5 && I.y <= CANVAS_HEIGHT;
-  };
-
-  // draws the bullet
-  I.draw = function() {
-    canvas.fillStyle = this.color;
-    canvas.fillRect(this.x, this.y, this.width, this.height);
-  };
-
-  // updates the bullet position
-  I.update = function() {
-    I.x += I.xVelocity;
-    I.y += I.yVelocity;
-
-    I.active = I.active && I.inBounds();
-  };
-
-  return I;
-}
 
 // this function makes Enemys
 // it needs to be passed:
@@ -121,7 +92,7 @@ function Enemy(I) {
 }
 
 function newEnemy(xV, yV, x, y) {
-  playerEnemys.push(Enemy({
+  playerEnemies.push(Enemy({
     xVelocity: xV,
     yVelocity: yV,
     x: x,
@@ -129,7 +100,7 @@ function newEnemy(xV, yV, x, y) {
   }));
 }
 
-function MakeRandomEnemys() {
+function MakeRandomEnemies() {
     var random = Math.floor(Math.random() * 15) + 1  ;
 
     if(parseInt(Math.random()*1.9)) {
@@ -137,26 +108,29 @@ function MakeRandomEnemys() {
     }
 }
 
+// checks if two objects with x and y values are in contact
 function collides(a, b) {
-  return a.x < b.x + b.width + 10 &&
-         a.x + a.width + 10 > b.x &&
-         a.y < b.y + b.height + 10 &&
-         a.y + a.height +10 > b.y;
+  return a.x < b.x + b.width  &&
+         a.x + a.width  > b.x &&
+         a.y < b.y + b.height  &&
+         a.y + a.height  > b.y;
 }
 
+// this function checks if objects collide with things
 function handleCollisions() {
+  // check if the bullit and enemy collide
   playerBullets.forEach(function(bullet) {
-    playerEnemys.forEach(function(enemy) {
+    playerEnemies.forEach(function(enemy) {
       if (collides(bullet, enemy)) {
         bullet.active = false;
         enemy.active = false;
         score+=100;
-
       }
     });
   });
 
-  playerEnemys.forEach(function(enemy) {
+  // check if the player and enemy collide
+  playerEnemies.forEach(function(enemy) {
     if (collides(enemy, player)) {
       enemy.active = false;
       score = 0;
@@ -170,30 +144,18 @@ function handleCollisions() {
 }
 
 
-var playerpos = player.midpoint();
-document.getElementById('myCanvas').onclick = function() {
-  playerpos = player.midpoint();
-  playerpos.x = playerpos.x - cursorX;
-  playerpos.y = playerpos.y - cursorY;
-  playerpos.angle = Math.atan(playerpos.x/playerpos.y);
-  playerpos.xshoot = 6.36 * Math.sin(playerpos.angle);
-  playerpos.yshoot = 6.36 * Math.cos(playerpos.angle);
-  if(playerpos.y > 0) {
-    playerpos.yshoot = -playerpos.yshoot;
-    playerpos.xshoot = -playerpos.xshoot;
-  }
-  player.shoot(playerpos.xshoot,playerpos.yshoot);
-}
-
 
 
 function fastUpdate() {
   if(updateFrames == false) {return};
-  // update the bullets positions
+  // update the bullets positions and remove inactive bullets
+  handleCollisions(); // check and handle any object collisions
+
+
+  // update the bullets
   playerBullets.forEach(function(bullet) {
     bullet.update();
   });
-  // re move non active bullets
   playerBullets = playerBullets.filter(function(bullet) {
     return bullet.active;
   });
@@ -202,77 +164,85 @@ function fastUpdate() {
 
 function fastDraw() {
   if(updateFrames == false) {return};
+  // draw the bullets
+}
+
+function update() {
+  if(updateFrames == false) {return};
+  // check if keys are pressed
+  if (ispressed.d) {player.x += 10;}
+  if (ispressed.a) {player.x -= 10;}
+  if (ispressed.s) {player.y += 10;}
+  if (ispressed.w) {player.y -= 10;}
+
+  // detect if the player moves out of the box
+  if(player.x > 465) {player.x=465}
+  if(player.x < -10) {player.x= -10}
+  if(player.y > 300) {player.y=300}
+  if(player.y < -20) {player.y=-20}
+
+
+
+  // update the enemy positions and remove any inactives
+  playerEnemies.forEach(function(Enemy) {
+    Enemy.update();
+  });
+  playerEnemies = playerEnemies.filter(function(Enemy) {
+    return Enemy.active;
+  });
+
+}
+
+// this is the main drawing function
+function draw() {
+  if(updateFrames == false) {return};
+
+  canvas.clearRect(0, 0, 480, 320);       // clear the canvas
+  player.draw();                          // draw the player
+  canvas.fillText("SCORE " + score,5,10); // draw the current score
+
+  // draw the enemies
+  playerEnemies.forEach(function(Enemy) {
+    Enemy.draw();
+  });
+
+  // draw the bullets
   playerBullets.forEach(function(bullet) {
     bullet.draw();
   });
 }
 
-function update() {
-  if(updateFrames == false) {return};
-  if (ispressed.d) {
-    player.x += 10;
-  }
+function newGame() {
+  if(updateFrames==true) {return;}
+  score = 0;
+  updateFrames = true;
+  player.x = 100;
+  player.y = 100;
 
-  if (ispressed.a) {
-    player.x -= 10;
-  }
-  if (ispressed.s) {
-    player.y += 10;
-  }
-
-  if (ispressed.w) {
-    player.y -= 10;
-  }
-
-  if(player.x > 465) {player.x=465}
-  if(player.x < -10) {player.x= -10}
-
-  if(player.y > 300) {player.y=300}
-  if(player.y < -20) {player.y=-20}
-
-handleCollisions()
-
-
-  playerEnemys.forEach(function(Enemy) {
-    Enemy.update();
+  playerBullets = playerBullets.filter(function(bullet) {
+    return false;
   });
-  // re move non active bullets
-  playerEnemys = playerEnemys.filter(function(Enemy) {
-    return Enemy.active;
-  });
-}
 
-function draw() {
-
-  if(updateFrames == false) {return};
-  canvas.clearRect(0, 0, 480, 320);
-  player.draw();
-  canvas.fillText("SCORE " + score,5,10);
-  playerEnemys.forEach(function(Enemy) {
-    Enemy.draw();
+  playerEnemies = playerEnemies.filter(function(Enemy) {
+    return false;
   });
+
 }
 
 
-
-var cursorX;
-var cursorY;
-document.onmousemove = function(e){
-    cursorX = e.pageX;
-    cursorY = e.pageY;
-}
-
+// setup the fast drawing functions
 setInterval(function() {
   fastUpdate();
   fastDraw();
 }, 1);
 
-setInterval(function() {
-  MakeRandomEnemys();
-}, 500);
-
-
+// setup the normal drawing functions
 setInterval(function() {
   update();
   draw();
 }, 1000/FPS);
+
+// setup the enemie making function
+setInterval(function() {
+  MakeRandomEnemies();
+}, 500);
