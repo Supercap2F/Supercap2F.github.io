@@ -3,7 +3,8 @@ var ispressed = {
   a: false,
   s: false,
   d: false,
-  space: false
+  space: false,
+  enter: false
 }
 
 window.addEventListener("keydown",
@@ -22,6 +23,9 @@ function(e) {
     }
     if (e.keyCode == "32") {
       ispressed.space = true;
+    }
+    if (e.keyCode == "13") {
+      ispressed.enter = true;
     }
 }, false);
 
@@ -43,5 +47,8 @@ function(e) {
 
     if (e.keyCode == "32") {
       ispressed.space = false;
+    }
+    if (e.keyCode == "13") {
+      ispressed.enter = false;
     }
 }, false);
