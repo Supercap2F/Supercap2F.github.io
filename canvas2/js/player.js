@@ -9,14 +9,22 @@ var player = {
   LsideTile: 336,
   RsideTile: 334,
   JumpTile:  333,
+  dieTile: 453,
   lastState: 0,
   StateRate: 1,
   StateTog: 0,
   fallingRate: 10,
+  accRate: 0.1,
+  accVar: 0,
 
   JumpTime: 10,
   JumpCount: 0,
   StartJumpFlag: 0,
+
+  isDead: false,
+  isDieing: false,
+  DieLength: 10,
+  DieCount: 0,
   draw: function() {
     canvas.fillStyle = this.color;
     var sprite;
@@ -31,6 +39,9 @@ var player = {
       if(this.StateTog) {sprite = this.LsideTile; }
       else {sprite = this.frontTile; }
     }
+    else if(this.isDieing) {
+      sprite = this.dieTile;
+    }
     else {
       sprite = this.frontTile;
     }
@@ -42,7 +53,7 @@ var player = {
       map.tsize, // source width
       map.tsize, // source height
       this.x,  // target x
-      this.y - 18, // target y
+      this.y + 10, // target y
       this.width, // target width
       this.height // target height
     );
@@ -53,70 +64,121 @@ var player = {
       y: this.y + this.height/2
     };
   },
-  isTouchingSolidObject: function() {
-    var playerCol = Math.floor((this.x + Camera.x + 16)/map.tsize);
-    var playerRow = Math.floor((this.y)/map.tsize);
-    var tile = map.getTile(playerCol,playerRow);
-
-    switch(tile) {
-      case 155:
-        return true;
+  isSpriteSide: function(side) {
+    switch(side) {
+      case 0: // right side
+        var sprite  = isOverSprite((this.x + map.tsize + 1), (this.y + 10))
+        var sprite2 = isOverSprite((this.x + map.tsize + 1), (this.y + map.tsize - 10));
+        return {a: sprite, b: sprite2};
         break;
-      case 156:
-        return true;
+      case 1: // bottom
+        var sprite  = isOverSprite((this.x + 10), (this.y + map.tsize + 1))
+        var sprite2 = isOverSprite((this.x + map.tsize - 10), (this.y + map.tsize + 1));
+        return {a: sprite, b: sprite2};
         break;
-      case 65:
-        return true;
+      case 2: // left
+        var sprite  = isOverSprite((this.x - 1), (this.y + 10))
+        var sprite2 = isOverSprite((this.x - 1), (this.y + map.tsize - 10));
+        return {a: sprite, b: sprite2};
         break;
-      case 144:
-        return true;
+      case 3: // top
+        var sprite  = isOverSprite((this.x + 10), (this.y + 10))
+        var sprite2 = isOverSprite((this.x + map.tsize - 10), (this.y + 10));
+        return {a: sprite, b: sprite2};
         break;
       default:
-        return false;
+        return;
+        break;
     }
   },
-  isTouchingSolidWall: function(side) { // send this functin a 1 for right side and 0 for left side
-    var playerCol = Math.floor((this.x + Camera.x)/map.tsize);
-    var playerRow = Math.floor((this.y + 16 )/map.tsize );
-    var tile1 = map.getTile(playerCol ,playerRow);
-    var tile2 = map.getTile(playerCol + 1,playerRow);
-    //console.log("left " + tile1);
-    //console.log("right " + tile2);
+  isTouchingSolidFloor: function() {
+    var sprite  = this.isSpriteSide(1);
 
-
-    if(side == 0) { var c = tile1; }
-    else { var c = tile2; }
-
-
-    switch(c) {
-      case 65:
-        return true;
-        break;
-      default:
-        return false;
+    if(sprite.a == 65 || sprite.b == 65) { return true; }
+    else if(sprite.a == 144 || sprite.b == 144) {
+      this.isDieing = true;
+      return true;
     }
+    else if(sprite.a == 155 || sprite.b == 155) { return true; }
+    else if(sprite.a == 156 || sprite.b == 156) { return true; }
+    else { return false; }
+
+  },
+  isTouchingSolidCeiling: function() {
+    var sprite  = this.isSpriteSide(3);
+
+    if(sprite.a == 65 || sprite.b == 65) { return true; }
+    if(sprite.a == 80 || sprite.b == 80) { return true; }
+    else { return false; }
+
+  },
+
+  isTouchingSolidWall: function(side) { // send this functin a 1 for right side and 0 for left side
+    if( side == 0) { var tile = this.isSpriteSide(2); }
+    else  { var tile = this.isSpriteSide(0); }
+
+    if(tile.a == 65 || tile.b == 65) { return true; }
+    else if(tile.a == 155 || tile.b == 155) { return true; }
+    else if(tile.a == 156 || tile.b == 156) { return true; }
+    else if(tile.a == 80  || tile.b == 80 ) { return true; }
+    else { return false; }
+
   },
 
   jump: function() {
-    if(ispressed.space && this.StartJumpFlag != 1 && this.isTouchingSolidObject() == true) {
+    if(ispressed.space && this.StartJumpFlag != 1 && this.isTouchingSolidFloor() == true) {
       this.StartJumpFlag =1;
     }
     if(this.JumpCount < this.JumpTime && this.StartJumpFlag == 1 ) {
       this.JumpCount ++;
       this.y = this.y - 20;
     }
+    if(this.isTouchingSolidCeiling() == true) {
+      this.JumpCount = this.JumpTime + 1;
+    }
     else {
       if(ispressed.space) {return;}
-      if(this.isTouchingSolidObject() != true) {return;}
+      if(this.isTouchingSolidFloor() != true) {return;}
       this.JumpCount = 0;
       this.StartJumpFlag = 0;
     }
 
   },
+  die: function() {
+    if(this.DieCount < this.DieLength) {
+      this.DieCount ++;
+      return;
+    }
+
+    this.DieCount = 0;
+    this.x = 256;
+    this.y = 0;
+    this.isDead = true;
+    Camera.x = 0;
+    Camera.y = 0;
+  },
   updateGravity: function() {
-    if(this.isTouchingSolidObject()) {return;} // return if the player is touching a solid
+    if(this.isTouchingSolidFloor()) { // return if the player is touching a solid
+      this.accVar = 0;
+      return;
+    }
 
     if(this.y > (map.tsize * map.rows)) {return;} // if the player has fallin of the screen
-    this.y = this.y + this.fallingRate;
+
+    this.accVar = this.accVar + this.accRate;
+
+    this.y = this.y + this.fallingRate + Math.floor(this.accVar);
+
+    if(this.isTouchingSolidFloor()) {
+      this.y = this.y + this.fallingRate + Math.floor(this.accVar);
+      this.y = Math.floor(this.y/map.tsize) * map.tsize;
+    }
   }
+}
+
+function isOverSprite(x,y) {
+  var col = Math.floor((x+Camera.x)/map.tsize);
+  var row = Math.floor((y+Camera.y)/map.tsize);
+
+  return(map.getTile(col,row));
 }
