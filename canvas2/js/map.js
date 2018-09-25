@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 var tileAtlas = new Image();
 tileAtlas.src = "./img/sprite/tileset_4.png"
 
@@ -152,4 +152,3 @@ function renderMap() {
   }
 
 }
->>>>>>> origin/master
