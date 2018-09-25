@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 var ispressed = {
   w: false,
   a: false,
@@ -108,4 +107,3 @@ function(e) {
       ispressed.enter = false;
     }
 }, false);
->>>>>>> origin/master
