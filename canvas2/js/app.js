@@ -7,7 +7,7 @@ var CANVAS_HEIGHT = 256;
 var cursorX;
 var cursorY;
 
-var gameMode = 0; //  0 - Show enter screen
+var gameMode = 1; //  0 - Show enter screen
                   //  1 - play normal
 
 
