@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 //var canvas = document.getElementById("myCanvas").getContext("2d");
 var FPS = 30;
 var CANVAS_WIDTH = 512;
@@ -202,4 +202,4 @@ setInterval(function() {
   update();
   draw();
 }, 1000/FPS);
->>>>>>> origin/master
+
