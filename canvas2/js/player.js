@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 // main player object
 var player = {
   color: "#0A0",
@@ -368,4 +368,3 @@ function isOverSprite(x,y) {
 
   return(map.getTile(col,row));
 }
->>>>>>> origin/master
